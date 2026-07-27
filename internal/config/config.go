@@ -12,6 +12,7 @@ const DefaultPath = "config/gateway.yaml"
 
 type Config struct {
 	Server ServerConfig  `yaml:"server"`
+	Auth   AuthConfig    `yaml:"auth"`
 	Routes []RouteConfig `yaml:"routes"`
 }
 
@@ -20,10 +21,15 @@ type ServerConfig struct {
 }
 
 type RouteConfig struct {
-	ID       string   `yaml:"id"`
-	Path     string   `yaml:"path"`
-	Upstream string   `yaml:"upstream"`
-	Methods  []string `yaml:"methods"`
+	ID           string   `yaml:"id"`
+	Path         string   `yaml:"path"`
+	Upstream     string   `yaml:"upstream"`
+	Methods      []string `yaml:"methods"`
+	AuthRequired bool     `yaml:"auth_required"`
+}
+
+type AuthConfig struct {
+	JWTSecret string `yaml:"jwt_secret"`
 }
 
 func Load(path string) (Config, error) {
@@ -63,6 +69,9 @@ func (cfg Config) Validate() error {
 		}
 		if route.Upstream == "" {
 			return fmt.Errorf("routes[%d].upstream is required", i)
+		}
+		if route.AuthRequired && cfg.Auth.JWTSecret == "" {
+			return fmt.Errorf("auth.jwt_secret is required when route %q requires auth", route.ID)
 		}
 		if _, ok := seenRoutes[route.ID]; ok {
 			return fmt.Errorf("route id %q is duplicated", route.ID)

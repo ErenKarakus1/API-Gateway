@@ -1,10 +1,14 @@
 server:
   port: "8080"
 
+auth:
+  jwt_secret: "change-me-in-production"
+
 routes:
   - id: users-service
     path: /api/users
     upstream: http://localhost:9001
+    auth_required: true
     methods:
       - GET
       - POST

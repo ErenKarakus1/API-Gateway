@@ -43,9 +43,15 @@ func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 			methods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete}
 		}
 
+		handlers := []gin.HandlerFunc{}
+		if routeCfg.AuthRequired {
+			handlers = append(handlers, middleware.JWTAuth(cfg.Auth.JWTSecret))
+		}
+		handlers = append(handlers, proxy.Handler(route))
+
 		for _, method := range methods {
-			router.Handle(method, routeCfg.Path, proxy.Handler(route))
-			router.Handle(method, routeCfg.Path+"/*path", proxy.Handler(route))
+			router.Handle(method, routeCfg.Path, handlers...)
+			router.Handle(method, routeCfg.Path+"/*path", handlers...)
 		}
 	}
 
