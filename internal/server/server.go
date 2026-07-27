@@ -8,12 +8,17 @@ import (
 	"github.com/ErenKarakus1/API-Gateway/internal/middleware"
 	"github.com/ErenKarakus1/API-Gateway/internal/proxy"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func New(cfg config.Config) (*gin.Engine, error) {
+	return NewWithLogger(cfg, zap.NewNop())
+}
+
+func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 	router := gin.New()
 
-	router.Use(gin.Logger(), gin.Recovery(), middleware.RequestID())
+	router.Use(gin.Recovery(), middleware.RequestID(), middleware.Logger(logger))
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
