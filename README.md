@@ -14,6 +14,7 @@ An API Gateway built with Go and Gin. The project demonstrates practical backend
 - JWT authentication
 - Role-based authorization
 - Per-route rate limiting
+- Redis-backed distributed rate limiting
 - Upstream timeout handling
 - Upstream retry handling
 - Circuit breaker protection
@@ -132,6 +133,10 @@ server:
 auth:
   jwt_secret: "change-me-in-production"
 
+redis:
+  enabled: false
+  address: localhost:6379
+
 routes:
   - id: users-service
     path: /api/users
@@ -158,6 +163,20 @@ Use `CONFIG_PATH` to load a different config file:
 ```bash
 CONFIG_PATH=config/gateway.compose.yaml go run ./cmd/gateway
 ```
+
+## Rate Limiting
+
+Rate limits are configured per route. By default, the gateway uses an in-memory limiter, which is useful for local development and single-instance deployments.
+
+Enable Redis in config to share rate limit counters across gateway instances:
+
+```yaml
+redis:
+  enabled: true
+  address: redis:6379
+```
+
+The Docker Compose demo starts Redis and uses `config/gateway.compose.yaml`, which enables Redis-backed rate limiting.
 
 ## Protected Routes
 

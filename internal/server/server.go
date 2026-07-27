@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/ErenKarakus1/API-Gateway/internal/middleware"
 	"github.com/ErenKarakus1/API-Gateway/internal/proxy"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -19,7 +21,7 @@ func New(cfg config.Config) (*gin.Engine, error) {
 
 func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 	router := gin.New()
-	rateLimiter := middleware.NewRateLimiter()
+	rateLimiter := newRateLimiter(cfg, logger)
 	circuitBreaker := middleware.NewCircuitBreaker()
 	appMetrics := metrics.New()
 
@@ -79,4 +81,21 @@ func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 	}
 
 	return router, nil
+}
+
+func newRateLimiter(cfg config.Config, logger *zap.Logger) *middleware.RateLimiter {
+	if !cfg.Redis.Enabled {
+		return middleware.NewRateLimiter()
+	}
+
+	client := redis.NewClient(&redis.Options{
+		Addr: cfg.Redis.Address,
+	})
+
+	if err := client.Ping(context.Background()).Err(); err != nil {
+		logger.Warn("redis unavailable, falling back to in-memory rate limiting", zap.Error(err))
+		return middleware.NewRateLimiter()
+	}
+
+	return middleware.NewRateLimiterWithStore(middleware.NewRedisRateLimitStore(client))
 }

@@ -132,6 +132,23 @@ routes:
 	}
 }
 
+func TestLoadRejectsEnabledRedisWithoutAddress(t *testing.T) {
+	t.Parallel()
+
+	path := writeConfig(t, `
+server:
+  port: "8080"
+redis:
+  enabled: true
+routes: []
+`)
+
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected enabled redis without address to fail")
+	}
+}
+
 func writeConfig(t *testing.T, content string) string {
 	t.Helper()
 

@@ -14,6 +14,7 @@ const DefaultPath = "config/gateway.yaml"
 type Config struct {
 	Server ServerConfig  `yaml:"server"`
 	Auth   AuthConfig    `yaml:"auth"`
+	Redis  RedisConfig   `yaml:"redis"`
 	Routes []RouteConfig `yaml:"routes"`
 }
 
@@ -36,6 +37,11 @@ type RouteConfig struct {
 
 type AuthConfig struct {
 	JWTSecret string `yaml:"jwt_secret"`
+}
+
+type RedisConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Address string `yaml:"address"`
 }
 
 type RateLimitConfig struct {
@@ -73,6 +79,9 @@ func Load(path string) (Config, error) {
 func (cfg Config) Validate() error {
 	if cfg.Server.Port == "" {
 		return errors.New("server.port is required")
+	}
+	if cfg.Redis.Enabled && cfg.Redis.Address == "" {
+		return errors.New("redis.address is required when redis is enabled")
 	}
 
 	seenRoutes := make(map[string]struct{}, len(cfg.Routes))

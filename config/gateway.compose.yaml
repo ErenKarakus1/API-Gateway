@@ -4,6 +4,10 @@ server:
 auth:
   jwt_secret: "change-me-in-production"
 
+redis:
+  enabled: true
+  address: redis:6379
+
 routes:
   - id: users-service
     path: /api/users
