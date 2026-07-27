@@ -24,22 +24,24 @@ An API Gateway built with Go and Gin. The project demonstrates practical backend
 
 ## Architecture
 
-```text
-Client
-  |
-  v
-Go API Gateway
-  |-- request id middleware
-  |-- structured logging
-  |-- prometheus metrics
-  |-- JWT authentication
-  |-- role authorization
-  |-- per-route rate limiting
-  |-- circuit breaker protection
-  |-- reverse proxy with timeout and retry handling
-  |
-  v
-Upstream services
+```mermaid
+flowchart LR
+    client[Client] --> gateway[Go API Gateway]
+
+    subgraph gateway[Go API Gateway]
+        requestID[Request ID]
+        logging[Structured Logging]
+        metrics[Prometheus Metrics]
+        auth[JWT Authentication]
+        roles[Role Authorization]
+        rateLimit[Rate Limiting]
+        breaker[Circuit Breaker]
+        proxy[Reverse Proxy]
+    end
+
+    requestID --> logging --> metrics --> auth --> roles --> rateLimit --> breaker --> proxy
+    proxy --> users[Users Service]
+    proxy --> other[Other Upstream Services]
 ```
 
 The gateway reads route definitions from YAML and registers matching Gin routes at startup. Each configured route can define its upstream URL, allowed methods, auth requirements, roles, rate limit, circuit breaker, timeout, and retry policy.
