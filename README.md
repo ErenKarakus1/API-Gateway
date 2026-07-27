@@ -122,6 +122,63 @@ Stop the demo:
 docker compose down
 ```
 
+## PowerShell Demo
+
+Start the gateway and mock users service:
+
+```powershell
+docker compose up --build
+```
+
+In another PowerShell window, check the gateway health endpoints:
+
+```powershell
+Invoke-RestMethod http://localhost:8080/health
+Invoke-RestMethod http://localhost:8080/ready
+```
+
+Try the protected route without a token:
+
+```powershell
+curl.exe -i http://localhost:8080/api/users
+```
+
+Generate a valid token:
+
+```powershell
+$TOKEN = go run ./cmd/token -secret change-me-in-production -sub user-123 -roles user
+```
+
+Call the protected users route:
+
+```powershell
+Invoke-RestMethod -Headers @{ Authorization = "Bearer $TOKEN" } http://localhost:8080/api/users
+Invoke-RestMethod -Headers @{ Authorization = "Bearer $TOKEN" } http://localhost:8080/api/users/1
+```
+
+Inspect rate limit headers:
+
+```powershell
+$response = Invoke-WebRequest -UseBasicParsing -Headers @{ Authorization = "Bearer $TOKEN" } http://localhost:8080/api/users
+$response.StatusCode
+$response.Headers["X-RateLimit-Limit"]
+$response.Headers["X-RateLimit-Remaining"]
+$response.Headers["X-RateLimit-Reset"]
+```
+
+Inspect Prometheus metrics:
+
+```powershell
+(Invoke-WebRequest -UseBasicParsing http://localhost:8080/metrics).Content |
+  Select-String "gateway_requests_total"
+```
+
+Stop the demo:
+
+```powershell
+docker compose down
+```
+
 ## Configuration
 
 The default config lives at `config/gateway.yaml`.
