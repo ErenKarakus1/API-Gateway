@@ -1,4 +1,10 @@
 server:
-  port: 8080
+  port: "8080"
 
-routes: []
+routes:
+  - id: users-service
+    path: /api/users
+    upstream: http://localhost:9001
+    methods:
+      - GET
+      - POST

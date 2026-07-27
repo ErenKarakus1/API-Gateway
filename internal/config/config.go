@@ -1,0 +1,74 @@
+package config
+
+import (
+	"errors"
+	"fmt"
+	"os"
+
+	"gopkg.in/yaml.v3"
+)
+
+const DefaultPath = "config/gateway.yaml"
+
+type Config struct {
+	Server ServerConfig  `yaml:"server"`
+	Routes []RouteConfig `yaml:"routes"`
+}
+
+type ServerConfig struct {
+	Port string `yaml:"port"`
+}
+
+type RouteConfig struct {
+	ID       string   `yaml:"id"`
+	Path     string   `yaml:"path"`
+	Upstream string   `yaml:"upstream"`
+	Methods  []string `yaml:"methods"`
+}
+
+func Load(path string) (Config, error) {
+	if path == "" {
+		path = DefaultPath
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return Config{}, fmt.Errorf("read config file: %w", err)
+	}
+
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return Config{}, fmt.Errorf("parse config file: %w", err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return Config{}, err
+	}
+
+	return cfg, nil
+}
+
+func (cfg Config) Validate() error {
+	if cfg.Server.Port == "" {
+		return errors.New("server.port is required")
+	}
+
+	seenRoutes := make(map[string]struct{}, len(cfg.Routes))
+	for i, route := range cfg.Routes {
+		if route.ID == "" {
+			return fmt.Errorf("routes[%d].id is required", i)
+		}
+		if route.Path == "" {
+			return fmt.Errorf("routes[%d].path is required", i)
+		}
+		if route.Upstream == "" {
+			return fmt.Errorf("routes[%d].upstream is required", i)
+		}
+		if _, ok := seenRoutes[route.ID]; ok {
+			return fmt.Errorf("route id %q is duplicated", route.ID)
+		}
+		seenRoutes[route.ID] = struct{}{}
+	}
+
+	return nil
+}
