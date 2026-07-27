@@ -1,12 +1,15 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/ErenKarakus1/API-Gateway/internal/config"
+	"github.com/ErenKarakus1/API-Gateway/internal/proxy"
 	"github.com/gin-gonic/gin"
 )
 
-func New() *gin.Engine {
+func New(cfg config.Config) (*gin.Engine, error) {
 	router := gin.New()
 
 	router.Use(gin.Logger(), gin.Recovery())
@@ -23,5 +26,22 @@ func New() *gin.Engine {
 		})
 	})
 
-	return router
+	for _, routeCfg := range cfg.Routes {
+		route, err := proxy.NewRoute(routeCfg)
+		if err != nil {
+			return nil, fmt.Errorf("create route %q: %w", routeCfg.ID, err)
+		}
+
+		methods := routeCfg.Methods
+		if len(methods) == 0 {
+			methods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete}
+		}
+
+		for _, method := range methods {
+			router.Handle(method, routeCfg.Path, proxy.Handler(route))
+			router.Handle(method, routeCfg.Path+"/*path", proxy.Handler(route))
+		}
+	}
+
+	return router, nil
 }
