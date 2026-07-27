@@ -157,3 +157,15 @@ Run the test suite with local caches:
 ```bash
 GOCACHE=.gocache GOMODCACHE=.gomodcache go test ./...
 ```
+
+Or use the Makefile shortcuts:
+
+```bash
+make test
+make run
+make token
+make docker-up
+make docker-down
+```
+
+Copy `.env.example` values into your shell or local environment when you want to override defaults.
