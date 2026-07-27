@@ -9,6 +9,9 @@ routes:
     path: /api/users
     upstream: http://localhost:9001
     auth_required: true
+    roles:
+      - user
+      - admin
     methods:
       - GET
       - POST

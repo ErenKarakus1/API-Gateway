@@ -54,6 +54,26 @@ routes: []
 	}
 }
 
+func TestLoadRejectsRolesWithoutAuth(t *testing.T) {
+	t.Parallel()
+
+	path := writeConfig(t, `
+server:
+  port: "8080"
+routes:
+  - id: users
+    path: /api/users
+    upstream: http://localhost:9001
+    roles:
+      - admin
+`)
+
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected roles without auth to fail")
+	}
+}
+
 func writeConfig(t *testing.T, content string) string {
 	t.Helper()
 

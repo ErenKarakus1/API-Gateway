@@ -47,6 +47,9 @@ func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 		if routeCfg.AuthRequired {
 			handlers = append(handlers, middleware.JWTAuth(cfg.Auth.JWTSecret))
 		}
+		if len(routeCfg.Roles) > 0 {
+			handlers = append(handlers, middleware.RequireRoles(routeCfg.Roles))
+		}
 		handlers = append(handlers, proxy.Handler(route))
 
 		for _, method := range methods {

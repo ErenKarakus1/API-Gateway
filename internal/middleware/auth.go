@@ -9,6 +9,12 @@ import (
 )
 
 const UserIDKey = "user_id"
+const RolesKey = "roles"
+
+type Claims struct {
+	Roles []string `json:"roles"`
+	jwt.RegisteredClaims
+}
 
 func JWTAuth(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -18,7 +24,8 @@ func JWTAuth(secret string) gin.HandlerFunc {
 			return
 		}
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		claims := &Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(secret), nil
 		}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 		if err != nil || !token.Valid {
@@ -26,12 +33,37 @@ func JWTAuth(secret string) gin.HandlerFunc {
 			return
 		}
 
-		if subject, err := token.Claims.GetSubject(); err == nil && subject != "" {
+		if subject := claims.Subject; subject != "" {
 			c.Set(UserIDKey, subject)
 			c.Request.Header.Set("X-User-ID", subject)
 		}
+		c.Set(RolesKey, claims.Roles)
 
 		c.Next()
+	}
+}
+
+func RequireRoles(requiredRoles []string) gin.HandlerFunc {
+	required := make(map[string]struct{}, len(requiredRoles))
+	for _, role := range requiredRoles {
+		required[role] = struct{}{}
+	}
+
+	return func(c *gin.Context) {
+		roles, ok := c.Get(RolesKey)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing roles"})
+			return
+		}
+
+		for _, role := range roles.([]string) {
+			if _, ok := required[role]; ok {
+				c.Next()
+				return
+			}
+		}
+
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "insufficient role"})
 	}
 }
 

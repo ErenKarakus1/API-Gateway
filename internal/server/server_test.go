@@ -90,6 +90,7 @@ func TestProtectedRouteRequiresValidJWT(t *testing.T) {
 				Upstream:     upstream.URL,
 				Methods:      []string{http.MethodGet},
 				AuthRequired: true,
+				Roles:        []string{"user"},
 			},
 		},
 	})
@@ -114,7 +115,7 @@ func TestProtectedRouteRequiresValidJWT(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build authorized request: %v", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+serverTestToken(t, "secret", "user-123"))
+	req.Header.Set("Authorization", "Bearer "+serverTestToken(t, "secret", "user-123", []string{"user"}))
 
 	authorizedRes, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -152,12 +153,18 @@ func TestRequestIDMiddlewarePreservesIncomingID(t *testing.T) {
 	}
 }
 
-func serverTestToken(t *testing.T, secret string, subject string) string {
+func serverTestToken(t *testing.T, secret string, subject string, roles []string) string {
 	t.Helper()
 
-	claims := jwt.RegisteredClaims{
-		Subject:   subject,
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+	claims := struct {
+		Roles []string `json:"roles"`
+		jwt.RegisteredClaims
+	}{
+		Roles: roles,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   subject,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		},
 	}
 
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))

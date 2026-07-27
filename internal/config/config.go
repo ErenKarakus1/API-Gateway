@@ -26,6 +26,7 @@ type RouteConfig struct {
 	Upstream     string   `yaml:"upstream"`
 	Methods      []string `yaml:"methods"`
 	AuthRequired bool     `yaml:"auth_required"`
+	Roles        []string `yaml:"roles"`
 }
 
 type AuthConfig struct {
@@ -72,6 +73,9 @@ func (cfg Config) Validate() error {
 		}
 		if route.AuthRequired && cfg.Auth.JWTSecret == "" {
 			return fmt.Errorf("auth.jwt_secret is required when route %q requires auth", route.ID)
+		}
+		if len(route.Roles) > 0 && !route.AuthRequired {
+			return fmt.Errorf("route %q must require auth when roles are configured", route.ID)
 		}
 		if _, ok := seenRoutes[route.ID]; ok {
 			return fmt.Errorf("route id %q is duplicated", route.ID)
