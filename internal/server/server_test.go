@@ -183,6 +183,45 @@ func TestRouteRateLimitBlocksExcessRequests(t *testing.T) {
 	}
 }
 
+func TestRouteTimeoutReturnsGatewayTimeout(t *testing.T) {
+	t.Parallel()
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(100 * time.Millisecond)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(upstream.Close)
+
+	router, err := New(config.Config{
+		Server: config.ServerConfig{Port: "8080"},
+		Routes: []config.RouteConfig{
+			{
+				ID:       "slow-users",
+				Path:     "/api/slow-users",
+				Upstream: upstream.URL,
+				Methods:  []string{http.MethodGet},
+				Timeout:  "10ms",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	gateway := httptest.NewServer(router)
+	t.Cleanup(gateway.Close)
+
+	res, err := http.Get(gateway.URL + "/api/slow-users")
+	if err != nil {
+		t.Fatalf("send gateway request: %v", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusGatewayTimeout {
+		t.Fatalf("expected status %d, got %d", http.StatusGatewayTimeout, res.StatusCode)
+	}
+}
+
 func TestRequestIDMiddlewarePreservesIncomingID(t *testing.T) {
 	t.Parallel()
 

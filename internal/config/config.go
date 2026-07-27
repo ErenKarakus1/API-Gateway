@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -28,6 +29,7 @@ type RouteConfig struct {
 	AuthRequired bool            `yaml:"auth_required"`
 	Roles        []string        `yaml:"roles"`
 	RateLimit    RateLimitConfig `yaml:"rate_limit"`
+	Timeout      string          `yaml:"timeout"`
 }
 
 type AuthConfig struct {
@@ -88,6 +90,11 @@ func (cfg Config) Validate() error {
 		}
 		if route.RateLimit.Requests > 0 && route.RateLimit.Window == "" {
 			return fmt.Errorf("routes[%d].rate_limit.window is required", i)
+		}
+		if route.Timeout != "" {
+			if _, err := time.ParseDuration(route.Timeout); err != nil {
+				return fmt.Errorf("routes[%d].timeout is invalid: %w", i, err)
+			}
 		}
 		if _, ok := seenRoutes[route.ID]; ok {
 			return fmt.Errorf("route id %q is duplicated", route.ID)

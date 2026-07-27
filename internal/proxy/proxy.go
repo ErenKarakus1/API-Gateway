@@ -1,10 +1,12 @@
 package proxy
 
 import (
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/ErenKarakus1/API-Gateway/internal/config"
 	"github.com/gin-gonic/gin"
@@ -24,6 +26,24 @@ func NewRoute(cfg config.RouteConfig) (Route, error) {
 	}
 
 	reverseProxy := httputil.NewSingleHostReverseProxy(target)
+	if cfg.Timeout != "" {
+		timeout, err := time.ParseDuration(cfg.Timeout)
+		if err != nil {
+			return Route{}, err
+		}
+		reverseProxy.Transport = &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: timeout,
+			}).DialContext,
+			ResponseHeaderTimeout: timeout,
+		}
+	}
+	reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusGatewayTimeout)
+		_, _ = w.Write([]byte(`{"error":"upstream timeout"}`))
+	}
+
 	originalDirector := reverseProxy.Director
 	reverseProxy.Director = func(req *http.Request) {
 		originalDirector(req)

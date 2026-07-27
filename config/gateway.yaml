@@ -15,6 +15,7 @@ routes:
     rate_limit:
       requests: 60
       window: 1m
+    timeout: 3s
     methods:
       - GET
       - POST
