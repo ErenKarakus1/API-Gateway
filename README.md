@@ -221,6 +221,25 @@ Examples include `missing_bearer_token`, `invalid_bearer_token`, `insufficient_r
 - `GET /metrics`: Prometheus metrics
 - Configured gateway routes, such as `GET /api/users`
 
+## Known Limitations
+
+- Route configuration is loaded at startup. Runtime route updates would require a reload mechanism or an external configuration service.
+- JWT validation uses a shared HMAC secret for the demo. A production deployment would typically use JWKS, key rotation, issuer validation, and audience validation.
+- Redis-backed rate limiting is implemented with simple fixed-window counters. Sliding-window or token-bucket algorithms would provide smoother traffic shaping.
+- The circuit breaker is process-local. In a multi-instance deployment, circuit state is not shared between gateway replicas.
+- Retry handling is intentionally limited to idempotent methods such as `GET`, `HEAD`, and `OPTIONS`.
+- The Docker Compose services are intended for local demonstration rather than hardened production deployment.
+
+## Future Improvements
+
+- Add JWKS-based JWT verification with issuer and audience checks.
+- Support hot-reloading route configuration without restarting the gateway.
+- Add token-bucket or sliding-window rate limiting for smoother request control.
+- Persist or coordinate circuit breaker state across gateway instances.
+- Add OpenTelemetry tracing for distributed request visibility.
+- Add admin-facing route validation and configuration preview tooling.
+- Add Kubernetes manifests or Helm chart for deployment examples.
+
 ## Development
 
 Run the test suite with local caches:
