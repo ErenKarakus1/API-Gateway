@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/ErenKarakus1/API-Gateway/internal/config"
+	"github.com/ErenKarakus1/API-Gateway/internal/middleware"
+	"github.com/ErenKarakus1/API-Gateway/internal/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,9 +45,7 @@ func NewRoute(cfg config.RouteConfig) (Route, error) {
 		}
 	}
 	reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusGatewayTimeout)
-		_, _ = w.Write([]byte(`{"error":"upstream timeout"}`))
+		response.WriteError(w, r.Header.Get(middleware.RequestIDHeader), http.StatusGatewayTimeout, "upstream_timeout", "upstream timeout")
 	}
 
 	originalDirector := reverseProxy.Director
@@ -79,7 +79,7 @@ func Handler(route Route) gin.HandlerFunc {
 func retry(c *gin.Context, route Route) bool {
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "read request body"})
+		response.Error(c, http.StatusBadGateway, "request_body_read_failed", "read request body")
 		return true
 	}
 	c.Request.Body.Close()
@@ -101,7 +101,7 @@ func retry(c *gin.Context, route Route) bool {
 		res, err := transport.RoundTrip(req)
 		if err != nil {
 			if attempt == attempts {
-				c.JSON(http.StatusGatewayTimeout, gin.H{"error": "upstream timeout"})
+				response.Error(c, http.StatusGatewayTimeout, "upstream_timeout", "upstream timeout")
 				return true
 			}
 			continue

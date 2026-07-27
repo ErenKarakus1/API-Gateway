@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ErenKarakus1/API-Gateway/internal/response"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -20,7 +21,7 @@ func JWTAuth(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := bearerToken(c.GetHeader("Authorization"))
 		if tokenString == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing bearer token"})
+			response.Error(c, http.StatusUnauthorized, "missing_bearer_token", "missing bearer token")
 			return
 		}
 
@@ -29,7 +30,7 @@ func JWTAuth(secret string) gin.HandlerFunc {
 			return []byte(secret), nil
 		}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid bearer token"})
+			response.Error(c, http.StatusUnauthorized, "invalid_bearer_token", "invalid bearer token")
 			return
 		}
 
@@ -52,7 +53,7 @@ func RequireRoles(requiredRoles []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		roles, ok := c.Get(RolesKey)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing roles"})
+			response.Error(c, http.StatusForbidden, "missing_roles", "missing roles")
 			return
 		}
 
@@ -63,7 +64,7 @@ func RequireRoles(requiredRoles []string) gin.HandlerFunc {
 			}
 		}
 
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "insufficient role"})
+		response.Error(c, http.StatusForbidden, "insufficient_role", "insufficient role")
 	}
 }
 

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -221,6 +222,18 @@ func TestRouteTimeoutReturnsGatewayTimeout(t *testing.T) {
 
 	if res.StatusCode != http.StatusGatewayTimeout {
 		t.Fatalf("expected status %d, got %d", http.StatusGatewayTimeout, res.StatusCode)
+	}
+
+	var body struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
+		t.Fatalf("decode timeout response: %v", err)
+	}
+	if body.Error.Code != "upstream_timeout" {
+		t.Fatalf("expected upstream_timeout, got %q", body.Error.Code)
 	}
 }
 

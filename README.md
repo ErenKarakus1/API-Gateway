@@ -1,6 +1,6 @@
 # Go API Gateway
 
-A portfolio API Gateway built with Go and Gin. The project demonstrates practical backend infrastructure patterns: config-driven reverse proxying, JWT authentication, role-based authorization, rate limiting, timeout handling, structured logs, Prometheus metrics, and a Docker Compose demo environment.
+An API Gateway built with Go and Gin. The project demonstrates practical backend infrastructure patterns: config-driven reverse proxying, JWT authentication, role-based authorization, rate limiting, timeout handling, structured logs, Prometheus metrics, and a Docker Compose demo environment.
 
 ## Features
 

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ErenKarakus1/API-Gateway/internal/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,7 +42,7 @@ func (limiter *RateLimiter) Limit(routeID string, requests int, window time.Dura
 		c.Writer.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%d", resetAt.Unix()))
 
 		if !allowed {
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+			response.Error(c, http.StatusTooManyRequests, "rate_limit_exceeded", "rate limit exceeded")
 			return
 		}
 

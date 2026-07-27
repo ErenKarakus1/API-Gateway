@@ -18,6 +18,7 @@ func RequestID() gin.HandlerFunc {
 			c.Request.Header.Set(RequestIDHeader, requestID)
 		}
 
+		c.Set("request_id", requestID)
 		c.Writer.Header().Set(RequestIDHeader, requestID)
 		c.Next()
 	}
