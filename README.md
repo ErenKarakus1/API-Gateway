@@ -1,5 +1,9 @@
 # Go API Gateway
 
+[![CI](https://github.com/ErenKarakus1/API-Gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/ErenKarakus1/API-Gateway/actions/workflows/ci.yml)
+![Go](https://img.shields.io/badge/Go-1.26.5-00ADD8?logo=go)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+
 An API Gateway built with Go and Gin. The project demonstrates practical backend infrastructure patterns: config-driven reverse proxying, JWT authentication, role-based authorization, rate limiting, timeout handling, retries, circuit breaking, structured logs, Prometheus metrics, and a Docker Compose demo environment.
 
 ## Features
@@ -169,3 +173,7 @@ make docker-down
 ```
 
 Copy `.env.example` values into your shell or local environment when you want to override defaults.
+
+## License
+
+This project is licensed under the MIT License.
