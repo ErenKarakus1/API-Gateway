@@ -16,6 +16,7 @@ routes:
       requests: 60
       window: 1m
     timeout: 3s
+    retries: 2
     methods:
       - GET
       - POST

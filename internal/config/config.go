@@ -30,6 +30,7 @@ type RouteConfig struct {
 	Roles        []string        `yaml:"roles"`
 	RateLimit    RateLimitConfig `yaml:"rate_limit"`
 	Timeout      string          `yaml:"timeout"`
+	Retries      int             `yaml:"retries"`
 }
 
 type AuthConfig struct {
@@ -95,6 +96,9 @@ func (cfg Config) Validate() error {
 			if _, err := time.ParseDuration(route.Timeout); err != nil {
 				return fmt.Errorf("routes[%d].timeout is invalid: %w", i, err)
 			}
+		}
+		if route.Retries < 0 {
+			return fmt.Errorf("routes[%d].retries must be greater than or equal to zero", i)
 		}
 		if _, ok := seenRoutes[route.ID]; ok {
 			return fmt.Errorf("route id %q is duplicated", route.ID)

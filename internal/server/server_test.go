@@ -224,6 +224,60 @@ func TestRouteTimeoutReturnsGatewayTimeout(t *testing.T) {
 	}
 }
 
+func TestRouteRetriesTransientUpstreamFailure(t *testing.T) {
+	t.Parallel()
+
+	attempts := 0
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	}))
+	t.Cleanup(upstream.Close)
+
+	router, err := New(config.Config{
+		Server: config.ServerConfig{Port: "8080"},
+		Routes: []config.RouteConfig{
+			{
+				ID:       "flaky-users",
+				Path:     "/api/flaky-users",
+				Upstream: upstream.URL,
+				Methods:  []string{http.MethodGet},
+				Retries:  1,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	gateway := httptest.NewServer(router)
+	t.Cleanup(gateway.Close)
+
+	res, err := http.Get(gateway.URL + "/api/flaky-users")
+	if err != nil {
+		t.Fatalf("send gateway request: %v", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, res.StatusCode)
+	}
+
+	if res.Header.Get("X-Retry-Attempts") != "1" {
+		t.Fatalf("expected retry attempts header to be 1, got %q", res.Header.Get("X-Retry-Attempts"))
+	}
+
+	if attempts != 2 {
+		t.Fatalf("expected 2 upstream attempts, got %d", attempts)
+	}
+}
+
 func TestRequestIDMiddlewarePreservesIncomingID(t *testing.T) {
 	t.Parallel()
 
