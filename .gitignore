@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+
+bin/
+dist/
+tmp/
+.gocache/
+coverage.out
+
+*.exe
+*.test
+
+.idea/
+.vscode/
