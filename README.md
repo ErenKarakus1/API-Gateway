@@ -75,6 +75,52 @@ TOKEN=$(go run ./cmd/token -secret change-me-in-production -sub user-123 -roles 
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/users
 ```
 
+## Demo Walkthrough
+
+Start the gateway and mock users service:
+
+```bash
+docker compose up --build
+```
+
+In another terminal, check the gateway health endpoints:
+
+```bash
+curl http://localhost:8080/health
+curl http://localhost:8080/ready
+```
+
+Try the protected route without a token:
+
+```bash
+curl http://localhost:8080/api/users
+```
+
+Generate a valid token:
+
+```bash
+TOKEN=$(go run ./cmd/token -secret change-me-in-production -sub user-123 -roles user)
+```
+
+Call the protected users route:
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/users
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/users/1
+```
+
+Inspect Prometheus metrics:
+
+```bash
+curl http://localhost:8080/metrics
+```
+
+Stop the demo:
+
+```bash
+docker compose down
+```
+
 ## Configuration
 
 The default config lives at `config/gateway.yaml`.
