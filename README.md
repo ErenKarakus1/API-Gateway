@@ -62,6 +62,13 @@ docker compose up --build
 
 The Compose demo starts the gateway on `http://localhost:8080` and a mock users service behind it.
 
+Generate a demo JWT and call the protected users route:
+
+```bash
+TOKEN=$(go run ./cmd/token -secret change-me-in-production -sub user-123 -roles user)
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/users
+```
+
 ## Configuration
 
 The default config lives at `config/gateway.yaml`.
@@ -112,6 +119,12 @@ Example payload:
   "roles": ["user"],
   "exp": 1893456000
 }
+```
+
+Generate a compatible demo token:
+
+```bash
+go run ./cmd/token -secret change-me-in-production -sub user-123 -roles user,admin
 ```
 
 ## Error Responses
