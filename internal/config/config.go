@@ -21,16 +21,22 @@ type ServerConfig struct {
 }
 
 type RouteConfig struct {
-	ID           string   `yaml:"id"`
-	Path         string   `yaml:"path"`
-	Upstream     string   `yaml:"upstream"`
-	Methods      []string `yaml:"methods"`
-	AuthRequired bool     `yaml:"auth_required"`
-	Roles        []string `yaml:"roles"`
+	ID           string          `yaml:"id"`
+	Path         string          `yaml:"path"`
+	Upstream     string          `yaml:"upstream"`
+	Methods      []string        `yaml:"methods"`
+	AuthRequired bool            `yaml:"auth_required"`
+	Roles        []string        `yaml:"roles"`
+	RateLimit    RateLimitConfig `yaml:"rate_limit"`
 }
 
 type AuthConfig struct {
 	JWTSecret string `yaml:"jwt_secret"`
+}
+
+type RateLimitConfig struct {
+	Requests int    `yaml:"requests"`
+	Window   string `yaml:"window"`
 }
 
 func Load(path string) (Config, error) {
@@ -76,6 +82,12 @@ func (cfg Config) Validate() error {
 		}
 		if len(route.Roles) > 0 && !route.AuthRequired {
 			return fmt.Errorf("route %q must require auth when roles are configured", route.ID)
+		}
+		if route.RateLimit.Requests < 0 {
+			return fmt.Errorf("routes[%d].rate_limit.requests must be greater than zero", i)
+		}
+		if route.RateLimit.Requests > 0 && route.RateLimit.Window == "" {
+			return fmt.Errorf("routes[%d].rate_limit.window is required", i)
 		}
 		if _, ok := seenRoutes[route.ID]; ok {
 			return fmt.Errorf("route id %q is duplicated", route.ID)

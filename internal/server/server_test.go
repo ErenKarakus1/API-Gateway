@@ -132,6 +132,57 @@ func TestProtectedRouteRequiresValidJWT(t *testing.T) {
 	}
 }
 
+func TestRouteRateLimitBlocksExcessRequests(t *testing.T) {
+	t.Parallel()
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(upstream.Close)
+
+	router, err := New(config.Config{
+		Server: config.ServerConfig{Port: "8080"},
+		Routes: []config.RouteConfig{
+			{
+				ID:       "limited-users",
+				Path:     "/api/limited-users",
+				Upstream: upstream.URL,
+				Methods:  []string{http.MethodGet},
+				RateLimit: config.RateLimitConfig{
+					Requests: 1,
+					Window:   "1m",
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	gateway := httptest.NewServer(router)
+	t.Cleanup(gateway.Close)
+
+	firstRes, err := http.Get(gateway.URL + "/api/limited-users")
+	if err != nil {
+		t.Fatalf("send first gateway request: %v", err)
+	}
+	defer firstRes.Body.Close()
+
+	if firstRes.StatusCode != http.StatusNoContent {
+		t.Fatalf("expected status %d, got %d", http.StatusNoContent, firstRes.StatusCode)
+	}
+
+	secondRes, err := http.Get(gateway.URL + "/api/limited-users")
+	if err != nil {
+		t.Fatalf("send second gateway request: %v", err)
+	}
+	defer secondRes.Body.Close()
+
+	if secondRes.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("expected status %d, got %d", http.StatusTooManyRequests, secondRes.StatusCode)
+	}
+}
+
 func TestRequestIDMiddlewarePreservesIncomingID(t *testing.T) {
 	t.Parallel()
 

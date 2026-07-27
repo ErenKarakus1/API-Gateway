@@ -12,6 +12,9 @@ routes:
     roles:
       - user
       - admin
+    rate_limit:
+      requests: 60
+      window: 1m
     methods:
       - GET
       - POST

@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/ErenKarakus1/API-Gateway/internal/config"
 	"github.com/ErenKarakus1/API-Gateway/internal/middleware"
@@ -17,6 +18,7 @@ func New(cfg config.Config) (*gin.Engine, error) {
 
 func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 	router := gin.New()
+	rateLimiter := middleware.NewRateLimiter()
 
 	router.Use(gin.Recovery(), middleware.RequestID(), middleware.Logger(logger))
 
@@ -49,6 +51,13 @@ func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 		}
 		if len(routeCfg.Roles) > 0 {
 			handlers = append(handlers, middleware.RequireRoles(routeCfg.Roles))
+		}
+		if routeCfg.RateLimit.Requests > 0 {
+			window, err := time.ParseDuration(routeCfg.RateLimit.Window)
+			if err != nil {
+				return nil, fmt.Errorf("parse rate limit window for route %q: %w", routeCfg.ID, err)
+			}
+			handlers = append(handlers, rateLimiter.Limit(routeCfg.ID, routeCfg.RateLimit.Requests, window))
 		}
 		handlers = append(handlers, proxy.Handler(route))
 
