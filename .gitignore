@@ -6,6 +6,7 @@ bin/
 dist/
 tmp/
 .gocache/
+.gomodcache/
 coverage.out
 
 *.exe

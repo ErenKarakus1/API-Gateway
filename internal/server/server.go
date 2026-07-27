@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ErenKarakus1/API-Gateway/internal/config"
+	"github.com/ErenKarakus1/API-Gateway/internal/metrics"
 	"github.com/ErenKarakus1/API-Gateway/internal/middleware"
 	"github.com/ErenKarakus1/API-Gateway/internal/proxy"
 	"github.com/gin-gonic/gin"
@@ -19,8 +20,9 @@ func New(cfg config.Config) (*gin.Engine, error) {
 func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 	router := gin.New()
 	rateLimiter := middleware.NewRateLimiter()
+	appMetrics := metrics.New()
 
-	router.Use(gin.Recovery(), middleware.RequestID(), middleware.Logger(logger))
+	router.Use(gin.Recovery(), middleware.RequestID(), appMetrics.Middleware(), middleware.Logger(logger))
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -33,6 +35,7 @@ func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 			"status": "ready",
 		})
 	})
+	router.GET("/metrics", appMetrics.Handler())
 
 	for _, routeCfg := range cfg.Routes {
 		route, err := proxy.NewRoute(routeCfg)

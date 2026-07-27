@@ -1,8 +1,10 @@
 package server
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -240,6 +242,41 @@ func TestRequestIDMiddlewarePreservesIncomingID(t *testing.T) {
 
 	if rec.Header().Get("X-Request-ID") != "portfolio-request-1" {
 		t.Fatalf("expected incoming request id to be preserved")
+	}
+}
+
+func TestMetricsEndpointExposesGatewayMetrics(t *testing.T) {
+	t.Parallel()
+
+	router, err := New(config.Config{
+		Server: config.ServerConfig{Port: "8080"},
+	})
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	gateway := httptest.NewServer(router)
+	t.Cleanup(gateway.Close)
+
+	healthRes, err := http.Get(gateway.URL + "/health")
+	if err != nil {
+		t.Fatalf("send health request: %v", err)
+	}
+	defer healthRes.Body.Close()
+
+	metricsRes, err := http.Get(gateway.URL + "/metrics")
+	if err != nil {
+		t.Fatalf("send metrics request: %v", err)
+	}
+	defer metricsRes.Body.Close()
+
+	body, err := io.ReadAll(metricsRes.Body)
+	if err != nil {
+		t.Fatalf("read metrics response: %v", err)
+	}
+
+	if !strings.Contains(string(body), "gateway_requests_total") {
+		t.Fatalf("expected gateway metrics, got %s", string(body))
 	}
 }
 
