@@ -291,6 +291,75 @@ func TestRouteRetriesTransientUpstreamFailure(t *testing.T) {
 	}
 }
 
+func TestCircuitBreakerOpensAfterFailures(t *testing.T) {
+	t.Parallel()
+
+	upstreamAttempts := 0
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upstreamAttempts++
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	t.Cleanup(upstream.Close)
+
+	router, err := New(config.Config{
+		Server: config.ServerConfig{Port: "8080"},
+		Routes: []config.RouteConfig{
+			{
+				ID:       "unstable-users",
+				Path:     "/api/unstable-users",
+				Upstream: upstream.URL,
+				Methods:  []string{http.MethodGet},
+				CircuitBreaker: config.CircuitBreakerConfig{
+					FailureThreshold: 1,
+					ResetTimeout:     "1m",
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	gateway := httptest.NewServer(router)
+	t.Cleanup(gateway.Close)
+
+	firstRes, err := http.Get(gateway.URL + "/api/unstable-users")
+	if err != nil {
+		t.Fatalf("send first gateway request: %v", err)
+	}
+	defer firstRes.Body.Close()
+
+	if firstRes.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("expected status %d, got %d", http.StatusServiceUnavailable, firstRes.StatusCode)
+	}
+
+	secondRes, err := http.Get(gateway.URL + "/api/unstable-users")
+	if err != nil {
+		t.Fatalf("send second gateway request: %v", err)
+	}
+	defer secondRes.Body.Close()
+
+	if secondRes.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("expected status %d, got %d", http.StatusServiceUnavailable, secondRes.StatusCode)
+	}
+
+	var body struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(secondRes.Body).Decode(&body); err != nil {
+		t.Fatalf("decode circuit breaker response: %v", err)
+	}
+	if body.Error.Code != "circuit_open" {
+		t.Fatalf("expected circuit_open, got %q", body.Error.Code)
+	}
+
+	if upstreamAttempts != 1 {
+		t.Fatalf("expected circuit-open request not to reach upstream, got %d attempts", upstreamAttempts)
+	}
+}
+
 func TestRequestIDMiddlewarePreservesIncomingID(t *testing.T) {
 	t.Parallel()
 

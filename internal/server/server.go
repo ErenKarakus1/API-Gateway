@@ -20,6 +20,7 @@ func New(cfg config.Config) (*gin.Engine, error) {
 func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 	router := gin.New()
 	rateLimiter := middleware.NewRateLimiter()
+	circuitBreaker := middleware.NewCircuitBreaker()
 	appMetrics := metrics.New()
 
 	router.Use(gin.Recovery(), middleware.RequestID(), appMetrics.Middleware(), middleware.Logger(logger))
@@ -61,6 +62,13 @@ func NewWithLogger(cfg config.Config, logger *zap.Logger) (*gin.Engine, error) {
 				return nil, fmt.Errorf("parse rate limit window for route %q: %w", routeCfg.ID, err)
 			}
 			handlers = append(handlers, rateLimiter.Limit(routeCfg.ID, routeCfg.RateLimit.Requests, window))
+		}
+		if routeCfg.CircuitBreaker.FailureThreshold > 0 {
+			resetTimeout, err := time.ParseDuration(routeCfg.CircuitBreaker.ResetTimeout)
+			if err != nil {
+				return nil, fmt.Errorf("parse circuit breaker reset timeout for route %q: %w", routeCfg.ID, err)
+			}
+			handlers = append(handlers, circuitBreaker.Protect(routeCfg.ID, routeCfg.CircuitBreaker.FailureThreshold, resetTimeout))
 		}
 		handlers = append(handlers, proxy.Handler(route))
 

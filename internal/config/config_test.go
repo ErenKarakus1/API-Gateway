@@ -112,6 +112,26 @@ routes:
 	}
 }
 
+func TestLoadRejectsCircuitBreakerWithoutResetTimeout(t *testing.T) {
+	t.Parallel()
+
+	path := writeConfig(t, `
+server:
+  port: "8080"
+routes:
+  - id: users
+    path: /api/users
+    upstream: http://localhost:9001
+    circuit_breaker:
+      failure_threshold: 3
+`)
+
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected circuit breaker without reset timeout to fail")
+	}
+}
+
 func writeConfig(t *testing.T, content string) string {
 	t.Helper()
 
