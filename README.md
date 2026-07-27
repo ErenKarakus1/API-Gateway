@@ -1,6 +1,6 @@
 # Go API Gateway
 
-An API Gateway built with Go and Gin. The project demonstrates practical backend infrastructure patterns: config-driven reverse proxying, JWT authentication, role-based authorization, rate limiting, timeout handling, structured logs, Prometheus metrics, and a Docker Compose demo environment.
+An API Gateway built with Go and Gin. The project demonstrates practical backend infrastructure patterns: config-driven reverse proxying, JWT authentication, role-based authorization, rate limiting, timeout handling, retries, circuit breaking, structured logs, Prometheus metrics, and a Docker Compose demo environment.
 
 ## Features
 
@@ -11,6 +11,9 @@ An API Gateway built with Go and Gin. The project demonstrates practical backend
 - Role-based authorization
 - Per-route rate limiting
 - Upstream timeout handling
+- Upstream retry handling
+- Circuit breaker protection
+- Standardized JSON error responses
 - Prometheus metrics
 - Docker Compose demo environment
 - Gateway and middleware tests
@@ -28,13 +31,14 @@ Go API Gateway
   |-- JWT authentication
   |-- role authorization
   |-- per-route rate limiting
-  |-- reverse proxy with timeout handling
+  |-- circuit breaker protection
+  |-- reverse proxy with timeout and retry handling
   |
   v
 Upstream services
 ```
 
-The gateway reads route definitions from YAML and registers matching Gin routes at startup. Each configured route can define its upstream URL, allowed methods, auth requirements, roles, rate limit, and timeout.
+The gateway reads route definitions from YAML and registers matching Gin routes at startup. Each configured route can define its upstream URL, allowed methods, auth requirements, roles, rate limit, circuit breaker, timeout, and retry policy.
 
 ## Getting Started
 
@@ -80,7 +84,11 @@ routes:
     rate_limit:
       requests: 60
       window: 1m
+    circuit_breaker:
+      failure_threshold: 3
+      reset_timeout: 30s
     timeout: 3s
+    retries: 2
     methods:
       - GET
       - POST
@@ -105,6 +113,22 @@ Example payload:
   "exp": 1893456000
 }
 ```
+
+## Error Responses
+
+Gateway-generated errors use a consistent JSON shape:
+
+```json
+{
+  "error": {
+    "code": "upstream_timeout",
+    "message": "upstream timeout",
+    "request_id": "9f3c2f6c8a7e4b0fb77a2b64d02c1e91"
+  }
+}
+```
+
+Examples include `missing_bearer_token`, `invalid_bearer_token`, `insufficient_role`, `rate_limit_exceeded`, `upstream_timeout`, and `circuit_open`.
 
 ## Endpoints
 
