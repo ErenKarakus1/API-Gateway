@@ -27,3 +27,11 @@ The gateway starts on `http://localhost:8080`.
 curl http://localhost:8080/health
 curl http://localhost:8080/ready
 ```
+
+## Docker Demo
+
+```bash
+docker compose up --build
+```
+
+The Compose demo starts the gateway on `http://localhost:8080` and a mock users service behind it.

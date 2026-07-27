@@ -1,0 +1,19 @@
+services:
+  gateway:
+    build: .
+    environment:
+      CONFIG_PATH: /app/config/gateway.compose.yaml
+    ports:
+      - "8080:8080"
+    depends_on:
+      - users-service
+
+  users-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.mock
+    environment:
+      SERVICE_NAME: users-service
+      PORT: "9001"
+    expose:
+      - "9001"

@@ -1,0 +1,21 @@
+server:
+  port: "8080"
+
+auth:
+  jwt_secret: "change-me-in-production"
+
+routes:
+  - id: users-service
+    path: /api/users
+    upstream: http://users-service:9001
+    auth_required: true
+    roles:
+      - user
+      - admin
+    rate_limit:
+      requests: 60
+      window: 1m
+    timeout: 3s
+    methods:
+      - GET
+      - POST

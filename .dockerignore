@@ -1,0 +1,10 @@
+.git
+.gocache
+.gomodcache
+bin
+dist
+tmp
+coverage.out
+
+*.exe
+*.test
