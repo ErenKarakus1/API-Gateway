@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ErenKarakus1/API-Gateway/internal/config"
+	"github.com/ErenKarakus1/API-Gateway/internal/middleware"
 	"github.com/ErenKarakus1/API-Gateway/internal/proxy"
 	"github.com/gin-gonic/gin"
 )
@@ -12,7 +13,7 @@ import (
 func New(cfg config.Config) (*gin.Engine, error) {
 	router := gin.New()
 
-	router.Use(gin.Logger(), gin.Recovery())
+	router.Use(gin.Logger(), gin.Recovery(), middleware.RequestID())
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
