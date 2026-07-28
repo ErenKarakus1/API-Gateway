@@ -11,6 +11,8 @@ An API Gateway built with Go and Gin. The project demonstrates practical backend
 
 [![Go API Gateway demo video](https://img.youtube.com/vi/lE4EQJHAGvc/maxresdefault.jpg)](https://youtu.be/lE4EQJHAGvc)
 
+▶ **Click the image above to play the demo video**
+
 ## Features
 
 - Config-driven route forwarding
